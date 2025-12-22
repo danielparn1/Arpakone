@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="fi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kotityöarpa</title>
+  <style>
+    :root{
+      --bg1:#ffd6e8; --bg2:#ffc1dd;
+      --card:#ffffffcc; --card2:#ffffffb3;
+      --text:#1f2937; --muted:#6b7280;
+      --border:rgba(31,41,55,.12);
+      --shadow:0 10px 28px rgba(0,0,0,.12);
+      --blue:#3b82f6; --blue2:#2563eb;
+      --slate:#334155; --radius:18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text);
+      background:linear-gradient(180deg,var(--bg1),var(--bg2));
+      min-height:100vh;
+    }
+    .wrap{max-width:980px;margin:0 auto;padding:16px 14px 28px}
+    header{display:flex;align-items:center;gap:10px;padding:10px 4px 14px}
+    header .emoji{font-size:26px}
+    header h1{margin:0;font-size:24px;letter-spacing:.2px}
+
+    .panel{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:14px;
+      backdrop-filter: blur(8px);
+    }
+
+    .toolbar{
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap:10px;
+      align-items:start;
+    }
+
+    .buttons{display:flex;gap:10px;justify-content:flex-end}
+    button{
+      border:0;border-radius:14px;padding:11px 14px;
+      font-size:16px;font-weight:800;cursor:pointer;
+      transition: transform .05s ease, opacity .2s ease, background .2s ease;
+      white-space:nowrap;
+    }
+    button:active{transform:translateY(1px)}
+    .primary{background:linear-gradient(180deg,var(--blue),var(--blue2));color:#fff}
+    .secondary{background:#1118270f;color:#111827;border:1px solid var(--border)}
+    .ghost{background:var(--slate);color:#fff}
+    button:disabled{opacity:.55;cursor:not-allowed}
+
+    .hint{
+      margin:10px 2px 0;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.35;
+      font-weight:600;
+    }
+    code{background:#11182710;padding:2px 6px;border-radius:10px}
+
+    .msg{margin-top:10px}
+    .error{
+      background:#fee2e2;border:1px solid #fecaca;color:#7f1d1d;
+      padding:10px 12px;border-radius:14px;font-weight:700;
+    }
+    .ok{
+      background:#dcfce7;border:1px solid #86efac;color:#14532d;
+      padding:10px 12px;border-radius:14px;font-weight:700;
+    }
+
+    /* Picker boxes */
+    .picker{
+      margin-top:12px;
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:12px;
+    }
+    .pickerTop{
+      display:flex;gap:10px;align-items:center;justify-content:space-between;
+      margin-bottom:10px; flex-wrap:wrap;
+    }
+    .pickerTitle{font-weight:900}
+    .pickNote{font-size:12px;color:var(--muted);font-weight:700}
+    .pickerBtns{display:flex;gap:8px;flex-wrap:wrap}
+    .miniBtn{
+      border:1px solid var(--border);
+      background:#11182708;
+      color:#111827;
+      padding:8px 10px;
+      border-radius:12px;
+      font-weight:800;
+      cursor:pointer;
+      font-size:14px;
+    }
+
+    .gridPick{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap:10px;
+    }
+    .pickRow{
+      display:flex;align-items:center;gap:10px;
+      border:1px solid var(--border);
+      border-radius:14px;
+      background:#ffffff;
+      padding:8px 10px;
+    }
+    .pickRow input{width:18px;height:18px}
+    .pickImg{
+      width:38px;height:38px;border-radius:14px;
+      object-fit:cover;background:#11182710;border:1px solid var(--border);
+      flex:0 0 auto;
+    }
+    .pickName{font-weight:900}
+
+    /* Results */
+    .resultsWrap{margin-top:14px;display:none}
+    .resultsTop{
+      display:flex;gap:10px;align-items:center;justify-content:space-between;
+      margin-bottom:10px;
+    }
+    .resultsTop h2{margin:0;font-size:18px}
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap:12px;
+    }
+    .taskCard{
+      background:var(--card2);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow: var(--shadow);
+      padding:14px;
+      backdrop-filter: blur(8px);
+      animation: fadeIn .35s ease;
+    }
+    @keyframes fadeIn{from{opacity:0; transform: translateY(10px)}to{opacity:1; transform: translateY(0)}}
+    .taskHeader{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      margin-bottom:10px;
+    }
+    .taskName{font-weight:950;font-size:18px;line-height:1.1}
+    .badge{
+      font-size:12px;padding:4px 10px;border-radius:999px;
+      background:#11182710;border:1px solid var(--border);font-weight:900;flex:0 0 auto;
+    }
+
+    .assignees{display:flex;flex-direction:column;gap:10px}
+    .personCard{
+      display:flex;align-items:center;gap:10px;
+      background:#fff;border:1px solid var(--border);
+      border-radius:14px;padding:8px 10px;min-height:56px;
+    }
+    .personImg{
+      width:42px;height:42px;border-radius:14px;
+      object-fit:cover;background:#11182710;border:1px solid var(--border);
+      flex:0 0 auto;
+    }
+    .personName{font-weight:950}
+    .small{margin-top:10px;font-size:13px;color:var(--muted);font-weight:650;line-height:1.35}
+
+    @media (max-width: 520px){
+      .wrap{padding:14px 12px 24px}
+      header h1{font-size:22px}
+      .toolbar{grid-template-columns: 1fr}
+      .buttons{justify-content:stretch}
+      button{flex:1}
+      .grid{grid-template-columns: 1fr}
+      .resultsTop{flex-direction:column;align-items:stretch}
+      .resultsTop .buttons{justify-content:stretch}
+      .gridPick{grid-template-columns: 1fr}
+      .pickerBtns{justify-content:stretch}
+      .miniBtn{flex:1}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="emoji">🏠</div>
+      <h1>Kotityöarpa</h1>
+    </header>
+
+    <div class="panel">
+      <div class="toolbar">
+        <div>
+          <div class="hint" style="margin-top:0">
+           
+          </div>
+
+          <!-- Task picker -->
+          <div class="picker">
+            <div class="pickerTop">
+              <div>
+                <div class="pickerTitle">Arvottavat kotityöt</div>
+                <div class="pickNote">Valitse mitä kotitöitä arvotaan tällä kertaa.</div>
+              </div>
+              <div class="pickerBtns">
+                <button class="miniBtn" id="taskAllBtn" type="button">Valitse kaikki</button>
+                <button class="miniBtn" id="taskNoneBtn" type="button">Tyhjennä</button>
+              </div>
+            </div>
+            <div class="gridPick" id="taskGrid"></div>
+          </div>
+
+          <!-- People picker -->
+          <div class="picker">
+            <div class="pickerTop">
+              <div>
+                <div class="pickerTitle">Arvonnassa mukana</div>
+                <div class="pickNote">Valitse ketkä voivat saada kotitöitä </div>
+              </div>
+              <div class="pickerBtns">
+                <button class="miniBtn" id="selectAllBtn" type="button">Valitse kaikki</button>
+                <button class="miniBtn" id="selectNoneBtn" type="button">Tyhjennä</button>
+              </div>
+            </div>
+            <div class="gridPick" id="peopleGrid"></div>
+          </div>
+        </div>
+
+        <div class="buttons">
+          <button class="primary" id="drawBtn">Arvo!</button>
+          <button class="secondary" id="copyBtn" disabled>Kopioi tulos</button>
+        </div>
+      </div>
+
+      <div class="msg" id="msg"></div>
+    </div>
+
+    <div class="resultsWrap" id="resultsWrap">
+      <div class="resultsTop">
+        <h2>Tulos</h2>
+        <div class="buttons">
+          <button class="ghost" id="rerollBtn">Arvo uudelleen</button>
+        </div>
+      </div>
+
+      <div class="grid" id="results"></div>
+      <div class="small">
+       
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // --- People ---
+  const ALL_PEOPLE = ["Äiti","Iskä","Jaan","Elina","Daniel","Miisa","Hans","Linnea","Hilde","Elias","Elide","Adelle"];
+
+  // --- Tasks (now includes Imurointi) ---
+  const TASKS = [
+    "Tiskikoneen tyhjennys",
+    "Keittiön siivous",
+    "Pöydänkattaminen",
+    "Ruuanlaitto",
+    "Lelujen kerääminen",
+    "Laikan ulkoilutus",
+    "Imurointi"
+  ];
+
+  // --- Special rules ---
+  // Adelle only toys
+  const PERSON_ALLOWED_TASKS = new Map([
+    ["Adelle", new Set(["Lelujen kerääminen"])],
+    ["Elide", new Set(["Lelujen kerääminen", "Keittiön siivous"])]
+  ]);
+
+  // Parents do not do toys
+  const PERSON_DISALLOWED_TASKS = new Map([
+    ["Äiti", new Set(["Lelujen kerääminen"])],
+    ["Iskä", new Set(["Lelujen kerääminen"])]
+  ]);
+
+  const KITCHEN_TASK = "Keittiön siivous";
+
+  // Default people selection: all except Hilde, Elias, Miisa
+  const DEFAULT_UNCHECKED = new Set(["Hilde","Elias","Miisa"]);
+
+  // Images (project root)
+  const personImgSrc = (name) => `${name}.png`;
+
+  // Elements
+  const drawBtn = document.getElementById("drawBtn");
+  const rerollBtn = document.getElementById("rerollBtn");
+  const copyBtn = document.getElementById("copyBtn");
+  const resultsWrap = document.getElementById("resultsWrap");
+  const resultsEl = document.getElementById("results");
+  const msgEl = document.getElementById("msg");
+
+  const peopleGridEl = document.getElementById("peopleGrid");
+  const selectAllBtn = document.getElementById("selectAllBtn");
+  const selectNoneBtn = document.getElementById("selectNoneBtn");
+
+  const taskGridEl = document.getElementById("taskGrid");
+  const taskAllBtn = document.getElementById("taskAllBtn");
+  const taskNoneBtn = document.getElementById("taskNoneBtn");
+
+  // State
+  let lastDraw = null; // { tasks: string[], assignments: Map(task -> [people]) }
+
+  // Helpers
+  function shuffle(arr){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [a[i],a[j]]=[a[j],a[i]];
+    }
+    return a;
+  }
+
+  function clearMsg(){ msgEl.innerHTML=""; }
+  function setError(t){ msgEl.innerHTML=`<div class="error">${t}</div>`; }
+  function setOk(t){ msgEl.innerHTML=`<div class="ok">${t}</div>`; }
+
+  function isAllowed(person, task){
+    const allowed = PERSON_ALLOWED_TASKS.get(person);
+    if (allowed && !allowed.has(task)) return false;
+
+    const disallowed = PERSON_DISALLOWED_TASKS.get(person);
+    if (disallowed && disallowed.has(task)) return false;
+
+    return true;
+  }
+
+  function eligiblePeopleForTask(people, task){
+    return people.filter(p => isAllowed(p, task));
+  }
+
+  function getSelectedPeople(){
+    return [...peopleGridEl.querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.value);
+  }
+  function setAllPeople(checked){
+    [...peopleGridEl.querySelectorAll('input[type="checkbox"]')].forEach(cb => cb.checked = checked);
+  }
+
+  function getSelectedTasks(){
+    return [...taskGridEl.querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.value);
+  }
+  function setAllTasks(checked){
+    [...taskGridEl.querySelectorAll('input[type="checkbox"]')].forEach(cb => cb.checked = checked);
+  }
+
+  // Sound (always on)
+  let audioCtx = null;
+  function ensureAudio(){
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === "suspended") audioCtx.resume();
+  }
+  function beep({freq=600, duration=0.06, type="square", gain=0.05, when=0} = {}){
+    const ctx = audioCtx;
+    const t0 = ctx.currentTime + when;
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = type; o.frequency.value = freq;
+
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(gain, t0 + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+
+    o.connect(g); g.connect(ctx.destination);
+    o.start(t0); o.stop(t0 + duration + 0.02);
+  }
+  function playDrawSound(){
+    ensureAudio();
+    for(let i=0;i<8;i++){
+      beep({ freq: 340 + i*42, duration: 0.045, type:"square", gain:0.035, when: i*0.045 });
+    }
+    beep({ freq: 880, duration: 0.12, type:"sine", gain:0.06, when: 8*0.045 + 0.02 });
+    beep({ freq: 1175, duration: 0.14, type:"sine", gain:0.05, when: 8*0.045 + 0.05 });
+  }
+
+  // Rendering
+  function personCardHTML(name){
+    const src = personImgSrc(name);
+    return `
+      <div class="personCard">
+        <img class="personImg" src="${src}" alt="${name}" onerror="this.style.display='none';" />
+        <div class="personName">${name}</div>
+      </div>
+    `;
+  }
+
+  function renderPeoplePicker(){
+    peopleGridEl.innerHTML = "";
+    for(const name of ALL_PEOPLE){
+      const row = document.createElement("label");
+      row.className = "pickRow";
+      const checked = !DEFAULT_UNCHECKED.has(name);
+      row.innerHTML = `
+        <input type="checkbox" value="${name}" ${checked ? "checked" : ""} />
+        <img class="pickImg" src="${personImgSrc(name)}" alt="${name}" onerror="this.style.display='none';" />
+        <div class="pickName">${name}</div>
+      `;
+      peopleGridEl.appendChild(row);
+    }
+  }
+
+  function renderTaskPicker(){
+    taskGridEl.innerHTML = "";
+    for(const task of TASKS){
+      const row = document.createElement("label");
+      row.className = "pickRow";
+      row.innerHTML = `
+        <input type="checkbox" value="${task}" checked />
+        <div class="pickName">${task}</div>
+      `;
+      taskGridEl.appendChild(row);
+    }
+  }
+
+  function renderResults(selectedTasks, assignments){
+    resultsEl.innerHTML = "";
+    for(const task of selectedTasks){
+      const assignees = assignments.get(task) || [];
+      const card = document.createElement("div");
+      card.className = "taskCard";
+      card.innerHTML = `
+        <div class="taskHeader">
+          <div class="taskName">${task}</div>
+          <div class="badge">${assignees.length} hlö</div>
+        </div>
+        <div class="assignees">
+          ${assignees.map(personCardHTML).join("")}
+        </div>
+      `;
+      resultsEl.appendChild(card);
+    }
+  }
+
+  // Unique assignment with retries (no one gets multiple different tasks in same draw)
+  function drawAssignmentsUnique(selectedPeople, selectedTasks){
+    if(selectedTasks.length === 0) throw new Error("Valitse vähintään yksi kotityö arvottavaksi.");
+    if(selectedPeople.length === 0) throw new Error("Valitse vähintään yksi osallistuja.");
+
+    // Quick feasibility checks per task
+    for(const task of selectedTasks){
+      const eligible = eligiblePeopleForTask(selectedPeople, task);
+      if(eligible.length === 0){
+        throw new Error(`Kotityölle “${task}” ei löydy ketään valituista (sääntöjen takia).`);
+      }
+    }
+
+    // Try random constructions a bunch of times (handles constraints better than one greedy pass)
+    const MAX_TRIES = 300;
+
+    for(let attempt = 0; attempt < MAX_TRIES; attempt++){
+      const assignments = new Map();
+      selectedTasks.forEach(t => assignments.set(t, []));
+
+      const remaining = new Set(selectedPeople);
+      const tasksOrder = shuffle(selectedTasks);
+
+      let ok = true;
+
+      for(const task of tasksOrder){
+        // If kitchen is selected, we might need 2 people ONLY when Elide is chosen
+        const eligible = eligiblePeopleForTask([...remaining], task);
+        if(eligible.length === 0){ ok = false; break; }
+
+        const chosen = eligible[Math.floor(Math.random() * eligible.length)];
+        assignments.get(task).push(chosen);
+        remaining.delete(chosen);
+
+        // Special: if Elide got kitchen cleaning => add second person (must be different & available)
+        if(task === KITCHEN_TASK && chosen === "Elide"){
+          const helperPool = eligiblePeopleForTask([...remaining], task).filter(p => p !== "Elide");
+          if(helperPool.length === 0){ ok = false; break; } // must have helper
+          const helper = helperPool[Math.floor(Math.random() * helperPool.length)];
+          assignments.get(task).push(helper);
+          remaining.delete(helper);
+        }
+      }
+
+      // Need enough unique people overall (kitchen+Elide uses 2)
+      if(ok) return assignments;
+    }
+
+    throw new Error("Arvonta ei onnistunut nykyisillä valinnoilla (liikaa tehtäviä/rajoituksia). Kokeile valita vähemmän tehtäviä tai lisää osallistujia.");
+  }
+
+  function doDraw(){
+    clearMsg();
+
+    const selectedPeople = getSelectedPeople();
+    const selectedTasks = getSelectedTasks();
+
+    let assignments;
+    try{
+      assignments = drawAssignmentsUnique(selectedPeople, selectedTasks);
+    }catch(e){
+      setError(e?.message ?? "Arvonta epäonnistui.");
+      resultsWrap.style.display = "none";
+      copyBtn.disabled = true;
+      lastDraw = null;
+      return;
+    }
+
+    lastDraw = { tasks: selectedTasks, assignments };
+    resultsWrap.style.display = "block";
+    renderResults(selectedTasks, assignments);
+    copyBtn.disabled = false;
+
+    playDrawSound();
+    resultsWrap.scrollIntoView({ behavior:"smooth", block:"start" });
+  }
+
+  function copyResult(){
+    if(!lastDraw){
+      setError("Ei tulosta kopioitavaksi — paina ensin Arvo!");
+      return;
+    }
+    const { tasks, assignments } = lastDraw;
+    const lines = [];
+    lines.push("KOTITYÖARPA");
+    lines.push("");
+    for(const task of tasks){
+      const ppl = assignments.get(task) || [];
+      lines.push(`${task}: ${ppl.join(" + ")}`);
+    }
+    const text = lines.join("\n") + "\n";
+
+    navigator.clipboard.writeText(text).then(() => {
+      setOk("✅ Kopioitu leikepöydälle!");
+      setTimeout(() => (msgEl.innerHTML=""), 1800);
+    }).catch(() => setError("⚠️ Kopiointi ei onnistunut (selainesto)."));
+  }
+
+  // Wire up
+  drawBtn.addEventListener("click", doDraw);
+  rerollBtn.addEventListener("click", doDraw);
+  copyBtn.addEventListener("click", copyResult);
+
+  selectAllBtn.addEventListener("click", () => setAllPeople(true));
+  selectNoneBtn.addEventListener("click", () => setAllPeople(false));
+  taskAllBtn.addEventListener("click", () => setAllTasks(true));
+  taskNoneBtn.addEventListener("click", () => setAllTasks(false));
+
+  // Init
+  renderTaskPicker();
+  renderPeoplePicker();
+  resultsWrap.style.display = "none";
+})();
+</script>
+</body>
+</html>
