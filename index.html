@@ -256,7 +256,7 @@
   // --- People ---
   const ALL_PEOPLE = ["Äiti","Iskä","Jaan","Elina","Daniel","Miisa","Hans","Linnea","Hilde","Elias","Elide","Adelle"];
 
-  // --- Tasks (now includes Imurointi) ---
+  // --- Tasks ---
   const TASKS = [
     "Tiskikoneen tyhjennys",
     "Tiskikoneen täyttäminen",
@@ -269,25 +269,26 @@
     "Kaupassa käynti",
     "Vanhusten digiapu",
     "Vessan siivous", 
-    "Kierrätysen vienti"
+    "Kierrätysen vienti",
+    "Pöydän tyhjennys",
+    "Pelin siivous"
   ];
 
   // --- Special rules ---
-  // Adelle only toys
   const PERSON_ALLOWED_TASKS = new Map([
     ["Adelle", new Set(["Lelujen kerääminen"])],
     ["Elide", new Set(["Lelujen kerääminen", "Keittiön siivous"])]
   ]);
 
-  // Parents do not do toys
   const PERSON_DISALLOWED_TASKS = new Map([
     ["Äiti", new Set(["Lelujen kerääminen"])],
     ["Iskä", new Set(["Lelujen kerääminen"])]
   ]);
 
   const KITCHEN_TASK = "Keittiön siivous";
+  const TOYS_TASK = "Lelujen kerääminen"; // <-- nyt määritelty, jos joskus tarvitset
 
-  // Default people selection: all except Hilde, Elias, Miisa
+  // Default people selection: all except Hilde, Elias, Miisa, Linnea
   const DEFAULT_UNCHECKED = new Set(["Hilde","Elias","Miisa","Linnea"]);
 
   // Images (project root)
@@ -309,8 +310,7 @@
   const taskAllBtn = document.getElementById("taskAllBtn");
   const taskNoneBtn = document.getElementById("taskNoneBtn");
 
-  // State
-  let lastDraw = null; // { tasks: string[], assignments: Map(task -> [people]) }
+  let lastDraw = null;
 
   // Helpers
   function shuffle(arr){
@@ -414,9 +414,8 @@
     for(const task of TASKS){
       const row = document.createElement("label");
       row.className = "pickRow";
-      row.innerHTML = `<input type="checkbox" value="${task}" />
-
-
+      row.innerHTML = `
+        <input type="checkbox" value="${task}" />
         <div class="pickName">${task}</div>
       `;
       taskGridEl.appendChild(row);
@@ -442,21 +441,27 @@
     }
   }
 
-  // Unique assignment with retries (no one gets multiple different tasks in same draw)
+  // 🔥 Updated draw logic with your rules
   function drawAssignmentsUnique(selectedPeople, selectedTasks){
     if(selectedTasks.length === 0) throw new Error("Valitse vähintään yksi kotityö arvottavaksi.");
     if(selectedPeople.length === 0) throw new Error("Valitse vähintään yksi osallistuja.");
 
-    // Quick feasibility checks per task
+    // Quick feasibility checks per task (consider special pair cases)
     for(const task of selectedTasks){
       const eligible = eligiblePeopleForTask(selectedPeople, task);
       if(eligible.length === 0){
         throw new Error(`Kotityölle “${task}” ei löydy ketään valituista (sääntöjen takia).`);
       }
+      if(task === TOYS_TASK){
+        // If either Elide or Adelle is the only eligible but the other isn't selected -> still ok,
+        // because toys can be done by someone else too (except parents are blocked by rules anyway).
+        // However: if eligible contains only Elide or only Adelle, but the other is not selected,
+        // that's okay (they can be solo OR someone else can be chosen). We enforce "together"
+        // only when one of them is chosen.
+      }
     }
 
-    // Try random constructions a bunch of times (handles constraints better than one greedy pass)
-    const MAX_TRIES = 300;
+    const MAX_TRIES = 600;
 
     for(let attempt = 0; attempt < MAX_TRIES; attempt++){
       const assignments = new Map();
@@ -468,10 +473,39 @@
       let ok = true;
 
       for(const task of tasksOrder){
-        // If kitchen is selected, we might need 2 people ONLY when Elide is chosen
-        const eligible = eligiblePeopleForTask([...remaining], task);
+        let eligible = eligiblePeopleForTask([...remaining], task);
         if(eligible.length === 0){ ok = false; break; }
 
+        // ✅ Toys rule: if Elide or Adelle gets toys -> both together
+        if(task === TOYS_TASK){
+          // Candidate pool includes normal eligible people
+          const pick = eligible[Math.floor(Math.random() * eligible.length)];
+
+          if(pick === "Elide" || pick === "Adelle"){
+            const other = (pick === "Elide") ? "Adelle" : "Elide";
+
+            // other must be available right now to enforce "together"
+            if(!remaining.has(other)){
+              // Can't pick Elide/Adelle for toys now; try again by excluding them
+              eligible = eligible.filter(p => p !== "Elide" && p !== "Adelle");
+              if(eligible.length === 0){ ok = false; break; }
+              const chosenAlt = eligible[Math.floor(Math.random() * eligible.length)];
+              assignments.get(task).push(chosenAlt);
+              remaining.delete(chosenAlt);
+            } else {
+              assignments.get(task).push(pick, other);
+              remaining.delete(pick);
+              remaining.delete(other);
+            }
+          } else {
+            assignments.get(task).push(pick);
+            remaining.delete(pick);
+          }
+
+          continue; // done with toys
+        }
+
+        // Normal pick (one person)
         const chosen = eligible[Math.floor(Math.random() * eligible.length)];
         assignments.get(task).push(chosen);
         remaining.delete(chosen);
@@ -479,14 +513,13 @@
         // Special: if Elide got kitchen cleaning => add second person (must be different & available)
         if(task === KITCHEN_TASK && chosen === "Elide"){
           const helperPool = eligiblePeopleForTask([...remaining], task).filter(p => p !== "Elide");
-          if(helperPool.length === 0){ ok = false; break; } // must have helper
+          if(helperPool.length === 0){ ok = false; break; }
           const helper = helperPool[Math.floor(Math.random() * helperPool.length)];
           assignments.get(task).push(helper);
           remaining.delete(helper);
         }
       }
 
-      // Need enough unique people overall (kitchen+Elide uses 2)
       if(ok) return assignments;
     }
 
@@ -556,5 +589,3 @@
   resultsWrap.style.display = "none";
 })();
 </script>
-</body>
-</html>
