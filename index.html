@@ -259,6 +259,7 @@
   // --- Tasks (now includes Imurointi) ---
   const TASKS = [
     "Tiskikoneen tyhjennys",
+    "Tiskikoneen täyttäminen",
     "Keittiön siivous",
     "Pöydänkattaminen",
     "Ruuanlaitto",
@@ -266,7 +267,9 @@
     "Laikan ulkoilutus",
     "Imurointi",
     "Kaupassa käynti",
-    "Vanhusten digiapu"
+    "Vanhusten digiapu",
+    "Vessan siivous", 
+    "Kierrätysen vienti"
   ];
 
   // --- Special rules ---
@@ -411,8 +414,9 @@
     for(const task of TASKS){
       const row = document.createElement("label");
       row.className = "pickRow";
-      row.innerHTML = `
-        <input type="checkbox" value="${task}" checked />
+      row.innerHTML = `<input type="checkbox" value="${task}" />
+
+
         <div class="pickName">${task}</div>
       `;
       taskGridEl.appendChild(row);
